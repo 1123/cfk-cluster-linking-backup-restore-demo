@@ -1,0 +1,41 @@
+# Slim read-only UI for both clusters. No ingress: access via
+#   kubectl -n demo-clients port-forward svc/kafka-ui 8080:80   → http://localhost:8080
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: kafka-ui, namespace: demo-clients, labels: { app: kafka-ui } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: kafka-ui } }
+  template:
+    metadata: { labels: { app: kafka-ui } }
+    spec:
+      nodeSelector: { role: client }
+      containers:
+        - name: kafka-ui
+          image: ghcr.io/kafbat/kafka-ui:v1.5.0
+          ports: [ { containerPort: 8080 } ]
+          env:
+            - { name: SPRING_CONFIG_ADDITIONAL-LOCATION, value: /config/config.yaml }
+            # Keycloak token endpoint is HTTPS with the demo CA → JVM truststore
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -XX:MaxRAMPercentage=70
+                -Djavax.net.ssl.trustStore=/etc/jvm-truststore/truststore.jks -Djavax.net.ssl.trustStorePassword=mystorepassword
+                -Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=https://keycloak-service.keycloak.svc.cluster.local:8443/realms/kafka-demo/protocol/openid-connect/token
+          readinessProbe: { httpGet: { path: /actuator/health, port: 8080 }, initialDelaySeconds: 20, periodSeconds: 10 }
+          resources: { requests: { cpu: 200m, memory: 768Mi }, limits: { memory: 1Gi } }
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+            - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+            - { name: jvm-truststore, mountPath: /etc/jvm-truststore, readOnly: true }
+      volumes:
+        - { name: config, secret: { secretName: kafka-ui-config } }
+        - { name: ca, secret: { secretName: demo-ca } }
+        - { name: jvm-truststore, secret: { secretName: kafka-ui-jvm-truststore } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: kafka-ui, namespace: demo-clients }
+spec:
+  selector: { app: kafka-ui }
+  ports: [ { port: 80, targetPort: 8080 } ]

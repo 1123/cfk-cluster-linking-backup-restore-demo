@@ -11,7 +11,6 @@ jq -r '.topics | to_entries[] | .key as $t | .value | to_entries[] | "\($t) \(.k
 {
 echo "== Data RPO (cutoff for ACKs: < ${cutoff}; D-start ${dstart})"
 cat evidence/clients/producer-t*.log | awk -F'\t' -v cutoff="$cutoff" -v dstart="$dstart" '
-  FNR==NR && NR==FNR {next}
   BEGIN { while ((getline l < "evidence/.sec-ends") > 0) { split(l, a, " "); end[a[1] "-" a[2]] = a[3] } }
   $6=="ACKED" && $1 < cutoff {
     tp = $2 "-" $4; acked++
@@ -27,8 +26,7 @@ cat evidence/clients/producer-t*.log | awk -F'\t' -v cutoff="$cutoff" -v dstart=
   }'
 if [[ -f evidence/offsets-pri-D0.json && -f evidence/offsets-sec-D0.json ]]; then
   echo "== Offset RPO at D.0 (committed offsets primary − secondary, per group)"
-  jq -n --slurpfile p evidence/offsets-pri-D0.json --slurpfile s evidence/offsets-sec-D0.json \
-    '$p[0].groups | to_entries | map({group: .key, behind: ([.value | to_entries[] | .value - ($s[0].groups[.key // ""] // {} | .[.key] // 0)] | add)})' 2>/dev/null \
-  || echo "  (see evidence/offsets-*-D0.json)"
+  jq -c -n --slurpfile p evidence/offsets-pri-D0.json --slurpfile s evidence/offsets-sec-D0.json \
+    '$p[0].groups | to_entries[] | .key as $g | {group: $g, records_behind: ([.value | to_entries[] | .value - ($s[0].groups[$g][.key] // 0)] | add)}'
 fi
 } | tee evidence/rpo.txt

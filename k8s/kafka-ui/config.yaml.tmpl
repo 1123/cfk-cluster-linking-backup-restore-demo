@@ -1,0 +1,22 @@
+# kafbat UI cluster config – rendered by scripts/06-kafka-ui.sh into Secret kafka-ui-config (contains the client secret).
+kafka:
+  clusters:
+    - name: primary
+      bootstrapServers: ${BOOT_PRI}
+      readOnly: true
+      properties: &oauth
+        security.protocol: SASL_SSL
+        sasl.mechanism: OAUTHBEARER
+        sasl.login.callback.handler.class: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginCallbackHandler
+        sasl.oauthbearer.token.endpoint.url: ${KC_TOKEN_URL}
+        sasl.jaas.config: org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required clientId="kafka-admin" clientSecret="${KAFKA_ADMIN_SECRET}";
+        ssl.truststore.type: PEM
+        ssl.truststore.location: /etc/demo-ca/ca.pem
+        metadata.recovery.strategy: rebootstrap
+    - name: secondary
+      bootstrapServers: ${BOOT_SEC}
+      readOnly: true
+      properties: *oauth
+dynamic.config.enabled: false
+# The JVM truststore only holds the demo CA → the GitHub release check would fail with PKIX errors.
+github.release.info.enabled: false
