@@ -1,0 +1,23 @@
+# Rendered by scripts/link.sh – do not apply directly.
+apiVersion: platform.confluent.io/v1beta1
+kind: ClusterLink
+metadata: { name: ${LINK}, namespace: ${DEST_NS} }
+spec:
+  name: ${LINK}
+  destinationKafkaCluster:
+    kafkaRestClassRef: { name: kafka-rest }
+  sourceKafkaCluster:
+    bootstrapEndpoint: kafka.${SRC_NS}.svc.cluster.local:9094
+    clusterID: ${SRC_ID}
+    authentication:
+      type: oauth
+      jaasConfig: { secretRef: oauth-jaas-cluster-link }
+      oauthSettings: { tokenEndpointUri: ${KC_TOKEN_URL} }
+    tls: { enabled: true, secretRef: demo-ca-pem }
+  consumerGroupFilters:
+    - { name: "demo-cg-", patternType: PREFIXED, filterType: INCLUDE }
+  configs:
+    consumer.offset.sync.enable: "true"
+    consumer.offset.sync.ms: "5000"
+    topic.config.sync.ms: "5000"
+  mirrorTopics:${MIRRORS}

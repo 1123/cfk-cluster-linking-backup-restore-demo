@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>demo</groupId>
+  <artifactId>kafka-demo-client</artifactId>
+  <version>1.0</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <kafka.version>8.4.0-ccs</kafka.version>
+    <image>kafka-demo-client:dev</image> <!-- overridden: scripts/build-image.sh passes -Dimage=$IMAGE -->
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>confluent</id>
+      <url>https://packages.confluent.io/maven/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>${kafka.version}</version>
+    </dependency>
+    <!-- Required at runtime by the OAUTHBEARER login handler; not declared by kafka-clients' POM -->
+    <dependency>
+      <groupId>org.bitbucket.b_c</groupId>
+      <artifactId>jose4j</artifactId>
+      <version>0.9.6</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.20.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>2.0.17</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <version>3.5.2</version>
+        <configuration>
+          <from>
+            <image>eclipse-temurin:21-jre</image>
+            <platforms><platform><architecture>amd64</architecture><os>linux</os></platform></platforms>
+          </from>
+          <to><image>${image}</image></to>
+          <container>
+            <mainClass>demo.Main</mainClass>
+            <jvmFlags><jvmFlag>-XX:MaxRAMPercentage=75</jvmFlag></jvmFlags>
+          </container>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,40 @@
+# Applied ONLY in phase C (initial setup) – NEVER in phase E (the restore creates t1..t3 as mirror topics)
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: t1
+  namespace: kafka-primary
+spec:
+  partitionCount: 6
+  replicas: 3
+  kafkaRestClassRef: { name: kafka-rest }
+  configs:
+    min.insync.replicas: "2"
+    retention.ms: "604800000"
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: t2
+  namespace: kafka-primary
+spec:
+  partitionCount: 6
+  replicas: 3
+  kafkaRestClassRef: { name: kafka-rest }
+  configs:
+    min.insync.replicas: "2"
+    retention.ms: "604800000"
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: t3
+  namespace: kafka-primary
+spec:
+  partitionCount: 6
+  replicas: 3
+  kafkaRestClassRef: { name: kafka-rest }
+  configs:
+    min.insync.replicas: "2"
+    retention.ms: "604800000"

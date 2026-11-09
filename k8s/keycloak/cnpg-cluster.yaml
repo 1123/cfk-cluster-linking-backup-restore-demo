@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: kc-db
+  namespace: keycloak
+spec:
+  instances: 1
+  storage:
+    size: 10Gi
+    storageClass: premium-rwo
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }

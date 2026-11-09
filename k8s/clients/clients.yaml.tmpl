@@ -1,0 +1,212 @@
+# Template – rendered by scripts/05-clients.sh (envsubst $IMAGE). Layout: config, evidence PVC, toolbox, producer-t1..t3, consumer-t1..t3 (replicas 0 – started in step C).
+# Secrets (demo-ca, creds-producer, creds-consumer, creds-admin) are created by scripts/05-clients.sh.
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: demo-config, namespace: demo-clients }
+data:
+  KC_TOKEN_URL: "https://keycloak-service.keycloak.svc.cluster.local:8443/realms/kafka-demo/protocol/openid-connect/token"
+  BOOT_PRI: "kafka.kafka-primary.svc.cluster.local:9094"
+  BOOT_SEC: "kafka.kafka-secondary.svc.cluster.local:9094"
+  EVIDENCE_DIR: /evidence
+  CA_PEM: /etc/demo-ca/ca.pem
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: evidence, namespace: demo-clients }
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: premium-rwo
+  resources: { requests: { storage: 5Gi } }
+---
+apiVersion: v1
+kind: Pod
+metadata: { name: toolbox, namespace: demo-clients, labels: { app: toolbox } }
+spec:
+  nodeSelector: { role: client, topology.kubernetes.io/zone: europe-west3-a }
+  containers:
+    - name: toolbox
+      image: ${IMAGE}
+      command: ["sleep", "infinity"]
+      envFrom: [ { configMapRef: { name: demo-config } }, { secretRef: { name: creds-admin } } ]
+      resources: { requests: { cpu: 100m, memory: 512Mi }, limits: { memory: 1Gi } }
+      volumeMounts:
+        - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+        - { name: evidence, mountPath: /evidence }
+  volumes:
+    - { name: ca, secret: { secretName: demo-ca } }
+    - { name: evidence, persistentVolumeClaim: { claimName: evidence } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: producer-t1, namespace: demo-clients, labels: { app: producer, topic: t1 } }
+spec:
+  replicas: 0
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: producer, topic: t1 } }
+  template:
+    metadata: { labels: { app: producer, topic: t1 } }
+    spec:
+      nodeSelector: { role: client, topology.kubernetes.io/zone: europe-west3-a }
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: producer
+          image: ${IMAGE}
+          args: ["producer"]
+          env:
+            - { name: TOPIC, value: "t1" }
+            - name: BOOTSTRAP
+              valueFrom: { configMapKeyRef: { name: demo-config, key: BOOT_PRI } }
+          envFrom: [ { configMapRef: { name: demo-config } }, { secretRef: { name: creds-producer } } ]
+          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 768Mi } }
+          volumeMounts:
+            - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+            - { name: evidence, mountPath: /evidence }
+      volumes:
+        - { name: ca, secret: { secretName: demo-ca } }
+        - { name: evidence, persistentVolumeClaim: { claimName: evidence } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: producer-t2, namespace: demo-clients, labels: { app: producer, topic: t2 } }
+spec:
+  replicas: 0
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: producer, topic: t2 } }
+  template:
+    metadata: { labels: { app: producer, topic: t2 } }
+    spec:
+      nodeSelector: { role: client, topology.kubernetes.io/zone: europe-west3-a }
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: producer
+          image: ${IMAGE}
+          args: ["producer"]
+          env:
+            - { name: TOPIC, value: "t2" }
+            - name: BOOTSTRAP
+              valueFrom: { configMapKeyRef: { name: demo-config, key: BOOT_PRI } }
+          envFrom: [ { configMapRef: { name: demo-config } }, { secretRef: { name: creds-producer } } ]
+          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 768Mi } }
+          volumeMounts:
+            - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+            - { name: evidence, mountPath: /evidence }
+      volumes:
+        - { name: ca, secret: { secretName: demo-ca } }
+        - { name: evidence, persistentVolumeClaim: { claimName: evidence } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: producer-t3, namespace: demo-clients, labels: { app: producer, topic: t3 } }
+spec:
+  replicas: 0
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: producer, topic: t3 } }
+  template:
+    metadata: { labels: { app: producer, topic: t3 } }
+    spec:
+      nodeSelector: { role: client, topology.kubernetes.io/zone: europe-west3-a }
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: producer
+          image: ${IMAGE}
+          args: ["producer"]
+          env:
+            - { name: TOPIC, value: "t3" }
+            - name: BOOTSTRAP
+              valueFrom: { configMapKeyRef: { name: demo-config, key: BOOT_PRI } }
+          envFrom: [ { configMapRef: { name: demo-config } }, { secretRef: { name: creds-producer } } ]
+          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 768Mi } }
+          volumeMounts:
+            - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+            - { name: evidence, mountPath: /evidence }
+      volumes:
+        - { name: ca, secret: { secretName: demo-ca } }
+        - { name: evidence, persistentVolumeClaim: { claimName: evidence } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: consumer-t1, namespace: demo-clients, labels: { app: consumer, topic: t1 } }
+spec:
+  replicas: 0
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: consumer, topic: t1 } }
+  template:
+    metadata: { labels: { app: consumer, topic: t1 } }
+    spec:
+      nodeSelector: { role: client, topology.kubernetes.io/zone: europe-west3-a }
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: consumer
+          image: ${IMAGE}
+          args: ["consumer"]
+          env:
+            - { name: TOPIC, value: "t1" }
+            - name: BOOTSTRAP
+              valueFrom: { configMapKeyRef: { name: demo-config, key: BOOT_PRI } }
+          envFrom: [ { configMapRef: { name: demo-config } }, { secretRef: { name: creds-consumer } } ]
+          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 768Mi } }
+          volumeMounts:
+            - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+            - { name: evidence, mountPath: /evidence }
+      volumes:
+        - { name: ca, secret: { secretName: demo-ca } }
+        - { name: evidence, persistentVolumeClaim: { claimName: evidence } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: consumer-t2, namespace: demo-clients, labels: { app: consumer, topic: t2 } }
+spec:
+  replicas: 0
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: consumer, topic: t2 } }
+  template:
+    metadata: { labels: { app: consumer, topic: t2 } }
+    spec:
+      nodeSelector: { role: client, topology.kubernetes.io/zone: europe-west3-a }
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: consumer
+          image: ${IMAGE}
+          args: ["consumer"]
+          env:
+            - { name: TOPIC, value: "t2" }
+            - name: BOOTSTRAP
+              valueFrom: { configMapKeyRef: { name: demo-config, key: BOOT_PRI } }
+          envFrom: [ { configMapRef: { name: demo-config } }, { secretRef: { name: creds-consumer } } ]
+          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 768Mi } }
+          volumeMounts:
+            - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+            - { name: evidence, mountPath: /evidence }
+      volumes:
+        - { name: ca, secret: { secretName: demo-ca } }
+        - { name: evidence, persistentVolumeClaim: { claimName: evidence } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: consumer-t3, namespace: demo-clients, labels: { app: consumer, topic: t3 } }
+spec:
+  replicas: 0
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: consumer, topic: t3 } }
+  template:
+    metadata: { labels: { app: consumer, topic: t3 } }
+    spec:
+      nodeSelector: { role: client, topology.kubernetes.io/zone: europe-west3-a }
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: consumer
+          image: ${IMAGE}
+          args: ["consumer"]
+          env:
+            - { name: TOPIC, value: "t3" }
+            - name: BOOTSTRAP
+              valueFrom: { configMapKeyRef: { name: demo-config, key: BOOT_PRI } }
+          envFrom: [ { configMapRef: { name: demo-config } }, { secretRef: { name: creds-consumer } } ]
+          resources: { requests: { cpu: 100m, memory: 384Mi }, limits: { memory: 768Mi } }
+          volumeMounts:
+            - { name: ca, mountPath: /etc/demo-ca, readOnly: true }
+            - { name: evidence, mountPath: /evidence }
+      volumes:
+        - { name: ca, secret: { secretName: demo-ca } }
+        - { name: evidence, persistentVolumeClaim: { claimName: evidence } }

@@ -1,0 +1,8 @@
+pki/
+.secrets/
+evidence/
+clients/target/
+.env.local
+# customer-specific material – keep local only
+/*.png
+/comments.txt

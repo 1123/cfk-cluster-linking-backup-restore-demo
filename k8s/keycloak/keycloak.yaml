@@ -1,0 +1,25 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    host: kc-db-rw
+    database: app
+    usernameSecret: { name: kc-db-app, key: username }
+    passwordSecret: { name: kc-db-app, key: password }
+  http:
+    httpEnabled: false
+    tlsSecret: keycloak-tls
+  hostname:
+    # Fixed issuer for brokers, cluster links and clients (all inside the GKE cluster)
+    hostname: https://keycloak-service.keycloak.svc.cluster.local:8443
+    strict: true
+  ingress:
+    enabled: false
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { memory: 2Gi }

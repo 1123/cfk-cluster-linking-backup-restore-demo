@@ -1,0 +1,9 @@
+# D.1 "lights out": deny all ingress + egress for every pod in kafka-primary (enforced by GKE Dataplane V2).
+# Applied BEFORE the pods are force-deleted: killing the pods ends all established connections, the policy
+# blocks every reconnect of the recreated pods. Removed again in step E.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: isolate-primary, namespace: kafka-primary }
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]

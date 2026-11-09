@@ -1,0 +1,110 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: KeycloakRealmImport
+metadata:
+  name: kafka-demo
+  namespace: keycloak
+spec:
+  keycloakCRName: keycloak
+  # Client secrets are injected from Secret kc-client-secrets (never stored in Git)
+  placeholders:
+    KAFKA_BROKER_SECRET: { secret: { name: kc-client-secrets, key: KAFKA_BROKER_SECRET } }
+    CLUSTER_LINK_SECRET: { secret: { name: kc-client-secrets, key: CLUSTER_LINK_SECRET } }
+    PRODUCER_APP_SECRET: { secret: { name: kc-client-secrets, key: PRODUCER_APP_SECRET } }
+    CONSUMER_APP_SECRET: { secret: { name: kc-client-secrets, key: CONSUMER_APP_SECRET } }
+    KAFKA_ADMIN_SECRET:  { secret: { name: kc-client-secrets, key: KAFKA_ADMIN_SECRET } }
+  realm:
+    realm: kafka-demo
+    enabled: true
+    sslRequired: all
+    accessTokenLifespan: 300          # 5 min -> token refresh happens during the demo
+    clients:
+      - clientId: kafka-broker
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        clientAuthenticatorType: client-secret
+        secret: "${KAFKA_BROKER_SECRET}"
+        serviceAccountsEnabled: true
+        standardFlowEnabled: false
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        protocolMappers:
+          - name: audience-kafka
+            protocol: openid-connect
+            protocolMapper: oidc-audience-mapper
+            config:
+              included.custom.audience: kafka
+              access.token.claim: "true"
+              id.token.claim: "false"
+      - clientId: cluster-link
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        clientAuthenticatorType: client-secret
+        secret: "${CLUSTER_LINK_SECRET}"
+        serviceAccountsEnabled: true
+        standardFlowEnabled: false
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        protocolMappers:
+          - name: audience-kafka
+            protocol: openid-connect
+            protocolMapper: oidc-audience-mapper
+            config:
+              included.custom.audience: kafka
+              access.token.claim: "true"
+              id.token.claim: "false"
+      - clientId: producer-app
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        clientAuthenticatorType: client-secret
+        secret: "${PRODUCER_APP_SECRET}"
+        serviceAccountsEnabled: true
+        standardFlowEnabled: false
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        protocolMappers:
+          - name: audience-kafka
+            protocol: openid-connect
+            protocolMapper: oidc-audience-mapper
+            config:
+              included.custom.audience: kafka
+              access.token.claim: "true"
+              id.token.claim: "false"
+      - clientId: consumer-app
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        clientAuthenticatorType: client-secret
+        secret: "${CONSUMER_APP_SECRET}"
+        serviceAccountsEnabled: true
+        standardFlowEnabled: false
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        protocolMappers:
+          - name: audience-kafka
+            protocol: openid-connect
+            protocolMapper: oidc-audience-mapper
+            config:
+              included.custom.audience: kafka
+              access.token.claim: "true"
+              id.token.claim: "false"
+      - clientId: kafka-admin
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        clientAuthenticatorType: client-secret
+        secret: "${KAFKA_ADMIN_SECRET}"
+        serviceAccountsEnabled: true
+        standardFlowEnabled: false
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: false
+        protocolMappers:
+          - name: audience-kafka
+            protocol: openid-connect
+            protocolMapper: oidc-audience-mapper
+            config:
+              included.custom.audience: kafka
+              access.token.claim: "true"
+              id.token.claim: "false"
